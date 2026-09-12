@@ -133,14 +133,38 @@ function talebeCoz(docs: HamDoc[]): Talebe[] {
           aidatSadece: v.aidatSadece === true,
           aidatHaric: v.aidatHaric === true,
         };
-      });
-      cb(liste);
-    },
+  });
+}
+
+function talebeleriDinleHam(cb: (t: Talebe[]) => void, onError?: (e: Error) => void) {
+  const q = query(collection(db, COL), orderBy("sira", "asc"));
+  return onSnapshot(
+    q,
+    (snap) => cb(talebeCoz(snap.docs)),
     (err) => {
       console.error("Firestore dinleme hatası", err);
       onError?.(err);
     },
   );
+}
+
+/**
+ * PDF / Excel çıktıları için verileri doğrudan sunucudan (önbelleksiz) okur.
+ * Böylece indirilen dosya her zaman en güncel bilgileri içerir.
+ * Sunucuya ulaşılamazsa eldeki en son liste döner.
+ */
+export async function talebeleriTazele(): Promise<Talebe[]> {
+  try {
+    const q = query(collection(db, COL), orderBy("sira", "asc"));
+    const snap = await getDocsFromServer(q);
+    const liste = talebeCoz(snap.docs);
+    talebeSon = liste;
+    cacheYaz(CACHE.talebeler, liste);
+    talebeAbone.forEach((f) => f(liste));
+    return liste;
+  } catch {
+    return talebeSon ?? cacheOku<Talebe[]>(CACHE.talebeler) ?? [];
+  }
 }
 
 // Yerel listeyi ve önbelleği sunucu yanıtını beklemeden günceller
