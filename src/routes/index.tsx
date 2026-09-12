@@ -779,10 +779,11 @@ function Index() {
     });
   };
 
-  const aidatListePdf = () => {
+  const aidatListePdf = async () => {
+    const { aidat } = await tazeListeler();
     listeYazdir({
       altBaslik: "Talebe Listesi",
-      bilgi: [`Toplam talebe: ${aidatTalebeler.length}`],
+      bilgi: [`Toplam talebe: ${aidat.length}`],
       sutunlar: [
         { baslik: "Sıra No", genislik: "10%", hiza: "center" },
         { baslik: "Talebe İsmi", genislik: "30%" },
