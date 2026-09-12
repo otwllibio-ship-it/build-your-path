@@ -94,12 +94,10 @@ export function talebeleriDinle(cb: (t: Talebe[]) => void, onError?: (e: Error) 
   };
 }
 
-function talebeleriDinleHam(cb: (t: Talebe[]) => void, onError?: (e: Error) => void) {
-  const q = query(collection(db, COL), orderBy("sira", "asc"));
-  return onSnapshot(
-    q,
-    (snap) => {
-      const liste: Talebe[] = snap.docs.map((d) => {
+type HamDoc = { id: string; data: () => unknown };
+
+function talebeCoz(docs: HamDoc[]): Talebe[] {
+  return docs.map((d) => {
         const v = d.data() as Partial<Talebe>;
         return {
           id: d.id,
