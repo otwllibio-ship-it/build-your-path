@@ -648,7 +648,8 @@ function Index() {
     setParolaDegistirHata(null);
   };
 
-  const hafizlikPdf = () => {
+  const hafizlikPdf = async () => {
+    const { hafiz } = await tazeListeler();
     const gunler = tr("haftaGun").slice(0, 5);
     listeYazdir({
       altBaslik: "Hafızlık Takip Listesi",
