@@ -103,7 +103,7 @@ import {
   type Ders,
 } from "@/lib/talebeler";
 import { dosyaFotoDataUrl, bashHarfler } from "@/lib/foto";
-import { aidatTutariniOku, hocaMailAyarDinle } from "@/lib/talebeler";
+import { aidatTutariniOku, hocaMailAyarDinle, talebeleriTazele } from "@/lib/talebeler";
 import { useGruplar } from "@/hooks/use-gruplar";
 import { listeYazdir } from "@/lib/pdf";
 import { excelIndir, excelOku } from "@/lib/excel";
@@ -580,6 +580,17 @@ function Index() {
   const hafizTalebeler = useMemo(() => talebeler.filter((t) => !t.aidatSadece), [talebeler]);
   const aidatTalebeler = useMemo(() => talebeler.filter((t) => !t.aidatHaric), [talebeler]);
 
+  // PDF / Excel indirmeden hemen önce verileri sunucudan tazeler; böylece
+  // çıktı her zaman en son değişiklikleri içerir.
+  const tazeListeler = async () => {
+    const liste = await talebeleriTazele();
+    return {
+      tum: liste,
+      hafiz: liste.filter((t) => !t.aidatSadece),
+      aidat: liste.filter((t) => !t.aidatHaric),
+    };
+  };
+
   const haftalikToplam = useMemo(
     () => hafizTalebeler.reduce((acc, t) => acc + ilerleme(t, seciliHafta, haftaSonu), 0),
     [hafizTalebeler, seciliHafta, haftaSonu],
@@ -637,7 +648,8 @@ function Index() {
     setParolaDegistirHata(null);
   };
 
-  const hafizlikPdf = () => {
+  const hafizlikPdf = async () => {
+    const { hafiz } = await tazeListeler();
     const gunler = tr("haftaGun").slice(0, 5);
     listeYazdir({
       altBaslik: "Hafızlık Takip Listesi",
@@ -653,7 +665,7 @@ function Index() {
         { baslik: "Sayfa", genislik: "10%", hiza: "center" },
         { baslik: "Cüz", genislik: "10%", hiza: "center" },
       ],
-      satirlar: hafizTalebeler.map((t, i) => {
+      satirlar: hafiz.map((t, i) => {
         const verilen = getDersGunler(t, seciliDers, seciliHafta);
         return [
           i + 1,
@@ -666,14 +678,14 @@ function Index() {
     });
   };
 
-  const aidatAySecenekleri = () => {
+  const aidatAySecenekleri = (kaynak: Talebe[] = talebeler) => {
     const simdi = new Date();
     const yil = simdi.getFullYear();
     const ay = simdi.getMonth();
 
     // Sadece en az bir ödeme kaydı bulunan ayları dikkate al
     const kullanilanAylar = new Set<number>();
-    for (const t of talebeler) {
+    for (const t of kaynak) {
       if (!t.aidat) continue;
       for (const [key, val] of Object.entries(t.aidat)) {
         if (!val) continue;
@@ -700,16 +712,16 @@ function Index() {
   };
 
   const aidatPdf = async (secim: string = "buAy") => {
-    const tutar = await aidatTutariniOku();
+    const [tutar, taze] = await Promise.all([aidatTutariniOku(), tazeListeler()]);
     const simdi = new Date();
     const liste =
-      grupFiltre === "hepsi" ? aidatTalebeler : aidatTalebeler.filter((t) => t.grup === grupFiltre);
+      grupFiltre === "hepsi" ? taze.aidat : taze.aidat.filter((t) => t.grup === grupFiltre);
     const grupAdi =
       grupFiltre === "hepsi"
         ? "Tüm gruplar"
         : (gruplar.find((g) => g.id === grupFiltre)?.ad ?? "Grup");
     if (secim === "tumu") {
-      const aylar = aidatAySecenekleri().slice().reverse();
+      const aylar = aidatAySecenekleri(taze.tum).slice().reverse();
       listeYazdir({
         altBaslik: "Aidat Takip Listesi · Tüm Aylar",
         bilgi: [`Grup: ${grupAdi}`, `Aylık aidat: ${tutar.toLocaleString("tr-TR")} Birr`],
@@ -767,10 +779,11 @@ function Index() {
     });
   };
 
-  const aidatListePdf = () => {
+  const aidatListePdf = async () => {
+    const { aidat } = await tazeListeler();
     listeYazdir({
       altBaslik: "Talebe Listesi",
-      bilgi: [`Toplam talebe: ${aidatTalebeler.length}`],
+      bilgi: [`Toplam talebe: ${aidat.length}`],
       sutunlar: [
         { baslik: "Sıra No", genislik: "10%", hiza: "center" },
         { baslik: "Talebe İsmi", genislik: "30%" },
@@ -779,7 +792,7 @@ function Index() {
         { baslik: "Grup", genislik: "16%" },
         { baslik: "Telefon", genislik: "20%" },
       ],
-      satirlar: aidatTalebeler.map((t, i) => [
+      satirlar: aidat.map((t, i) => [
         i + 1,
         t.isim,
         yasHesapla(t.dogum) ?? "—",
@@ -790,7 +803,8 @@ function Index() {
     });
   };
 
-  const aidatListeExcel = () => {
+  const aidatListeExcel = async () => {
+    const { aidat } = await tazeListeler();
     excelIndir(
       "aidat-talebe-listesi",
       "Talebe Listesi",
@@ -802,7 +816,7 @@ function Index() {
         { baslik: "Grup", genislik: 16 },
         { baslik: "Telefon", genislik: 18 },
       ],
-      aidatTalebeler.map((t, i) => [
+      aidat.map((t, i) => [
         i + 1,
         t.isim,
         yasHesapla(t.dogum) ?? "—",
@@ -813,20 +827,22 @@ function Index() {
     );
   };
 
-  const aidatListeSadeceIsimPdf = () => {
+  const aidatListeSadeceIsimPdf = async () => {
+    const { aidat } = await tazeListeler();
     listeYazdir({
       altBaslik: "Talebe İsim Listesi",
-      bilgi: [`Toplam talebe: ${aidatTalebeler.length}`],
+      bilgi: [`Toplam talebe: ${aidat.length}`],
       sutunlar: [
         { baslik: "Sıra No", genislik: "15%", hiza: "center" },
         { baslik: "Talebe İsmi", genislik: "85%" },
       ],
-      satirlar: aidatTalebeler.map((t, i) => [i + 1, t.isim]),
+      satirlar: aidat.map((t, i) => [i + 1, t.isim]),
       tekSayfa: true,
     });
   };
 
-  const aidatListeSadeceIsimExcel = () => {
+  const aidatListeSadeceIsimExcel = async () => {
+    const { aidat } = await tazeListeler();
     excelIndir(
       "aidat-talebe-listesi-sadece-isimler",
       "Talebe İsim Listesi",
@@ -834,17 +850,17 @@ function Index() {
         { baslik: "Sıra No", genislik: 12 },
         { baslik: "Talebe İsmi", genislik: 40 },
       ],
-      aidatTalebeler.map((t, i) => [i + 1, t.isim]),
+      aidat.map((t, i) => [i + 1, t.isim]),
     );
   };
 
   const aidatExcel = async (secim: string = "buAy") => {
-    const tutar = await aidatTutariniOku();
+    const [tutar, taze] = await Promise.all([aidatTutariniOku(), tazeListeler()]);
     const simdi = new Date();
     const liste =
-      grupFiltre === "hepsi" ? aidatTalebeler : aidatTalebeler.filter((t) => t.grup === grupFiltre);
+      grupFiltre === "hepsi" ? taze.aidat : taze.aidat.filter((t) => t.grup === grupFiltre);
     if (secim === "tumu") {
-      const aylar = aidatAySecenekleri().slice().reverse();
+      const aylar = aidatAySecenekleri(taze.tum).slice().reverse();
       excelIndir(
         "aidat-takip-tum-aylar",
         "Aidat Takip",

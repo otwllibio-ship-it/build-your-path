@@ -6,6 +6,8 @@ import {
   deleteDoc,
   writeBatch,
   getDoc,
+  getDocFromServer,
+  getDocsFromServer,
   setDoc,
   query,
   orderBy,
@@ -94,12 +96,10 @@ export function talebeleriDinle(cb: (t: Talebe[]) => void, onError?: (e: Error) 
   };
 }
 
-function talebeleriDinleHam(cb: (t: Talebe[]) => void, onError?: (e: Error) => void) {
-  const q = query(collection(db, COL), orderBy("sira", "asc"));
-  return onSnapshot(
-    q,
-    (snap) => {
-      const liste: Talebe[] = snap.docs.map((d) => {
+type HamDoc = { id: string; data: () => unknown };
+
+function talebeCoz(docs: HamDoc[]): Talebe[] {
+  return docs.map((d) => {
         const v = d.data() as Partial<Talebe>;
         return {
           id: d.id,
@@ -135,14 +135,38 @@ function talebeleriDinleHam(cb: (t: Talebe[]) => void, onError?: (e: Error) => v
           aidatSadece: v.aidatSadece === true,
           aidatHaric: v.aidatHaric === true,
         };
-      });
-      cb(liste);
-    },
+  });
+}
+
+function talebeleriDinleHam(cb: (t: Talebe[]) => void, onError?: (e: Error) => void) {
+  const q = query(collection(db, COL), orderBy("sira", "asc"));
+  return onSnapshot(
+    q,
+    (snap) => cb(talebeCoz(snap.docs)),
     (err) => {
       console.error("Firestore dinleme hatası", err);
       onError?.(err);
     },
   );
+}
+
+/**
+ * PDF / Excel çıktıları için verileri doğrudan sunucudan (önbelleksiz) okur.
+ * Böylece indirilen dosya her zaman en güncel bilgileri içerir.
+ * Sunucuya ulaşılamazsa eldeki en son liste döner.
+ */
+export async function talebeleriTazele(): Promise<Talebe[]> {
+  try {
+    const q = query(collection(db, COL), orderBy("sira", "asc"));
+    const snap = await getDocsFromServer(q);
+    const liste = talebeCoz(snap.docs);
+    talebeSon = liste;
+    cacheYaz(CACHE.talebeler, liste);
+    talebeAbone.forEach((f) => f(liste));
+    return liste;
+  } catch {
+    return talebeSon ?? cacheOku<Talebe[]>(CACHE.talebeler) ?? [];
+  }
 }
 
 // Yerel listeyi ve önbelleği sunucu yanıtını beklemeden günceller
@@ -194,12 +218,19 @@ const AYAR_COL = "ayarlar";
 const AYAR_DOC = "genel";
 
 export async function aidatTutariniOku(): Promise<number> {
+  // Önce sunucudan (güncel) dener, ulaşılamazsa önbellekten okur.
   try {
-    const snap = await getDoc(doc(db, AYAR_COL, AYAR_DOC));
-    const v = snap.data()?.aidatTutar;
+    const snap = await getDocFromServer(doc(db, AYAR_COL, AYAR_DOC));
+    const v = snap.data()?.["aidatTutar"];
     return typeof v === "number" ? v : 0;
   } catch {
-    return 0;
+    try {
+      const snap = await getDoc(doc(db, AYAR_COL, AYAR_DOC));
+      const v = snap.data()?.["aidatTutar"];
+      return typeof v === "number" ? v : 0;
+    } catch {
+      return 0;
+    }
   }
 }
 
