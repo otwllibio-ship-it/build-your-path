@@ -712,16 +712,16 @@ function Index() {
   };
 
   const aidatPdf = async (secim: string = "buAy") => {
-    const tutar = await aidatTutariniOku();
+    const [tutar, taze] = await Promise.all([aidatTutariniOku(), tazeListeler()]);
     const simdi = new Date();
     const liste =
-      grupFiltre === "hepsi" ? aidatTalebeler : aidatTalebeler.filter((t) => t.grup === grupFiltre);
+      grupFiltre === "hepsi" ? taze.aidat : taze.aidat.filter((t) => t.grup === grupFiltre);
     const grupAdi =
       grupFiltre === "hepsi"
         ? "Tüm gruplar"
         : (gruplar.find((g) => g.id === grupFiltre)?.ad ?? "Grup");
     if (secim === "tumu") {
-      const aylar = aidatAySecenekleri().slice().reverse();
+      const aylar = aidatAySecenekleri(taze.tum).slice().reverse();
       listeYazdir({
         altBaslik: "Aidat Takip Listesi · Tüm Aylar",
         bilgi: [`Grup: ${grupAdi}`, `Aylık aidat: ${tutar.toLocaleString("tr-TR")} Birr`],
