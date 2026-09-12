@@ -792,7 +792,7 @@ function Index() {
         { baslik: "Grup", genislik: "16%" },
         { baslik: "Telefon", genislik: "20%" },
       ],
-      satirlar: aidatTalebeler.map((t, i) => [
+      satirlar: aidat.map((t, i) => [
         i + 1,
         t.isim,
         yasHesapla(t.dogum) ?? "—",
