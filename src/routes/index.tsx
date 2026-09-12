@@ -678,14 +678,14 @@ function Index() {
     });
   };
 
-  const aidatAySecenekleri = () => {
+  const aidatAySecenekleri = (kaynak: Talebe[] = talebeler) => {
     const simdi = new Date();
     const yil = simdi.getFullYear();
     const ay = simdi.getMonth();
 
     // Sadece en az bir ödeme kaydı bulunan ayları dikkate al
     const kullanilanAylar = new Set<number>();
-    for (const t of talebeler) {
+    for (const t of kaynak) {
       if (!t.aidat) continue;
       for (const [key, val] of Object.entries(t.aidat)) {
         if (!val) continue;
