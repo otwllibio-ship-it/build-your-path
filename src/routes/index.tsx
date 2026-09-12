@@ -103,7 +103,7 @@ import {
   type Ders,
 } from "@/lib/talebeler";
 import { dosyaFotoDataUrl, bashHarfler } from "@/lib/foto";
-import { aidatTutariniOku, hocaMailAyarDinle } from "@/lib/talebeler";
+import { aidatTutariniOku, hocaMailAyarDinle, talebeleriTazele } from "@/lib/talebeler";
 import { useGruplar } from "@/hooks/use-gruplar";
 import { listeYazdir } from "@/lib/pdf";
 import { excelIndir, excelOku } from "@/lib/excel";
