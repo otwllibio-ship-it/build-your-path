@@ -803,7 +803,8 @@ function Index() {
     });
   };
 
-  const aidatListeExcel = () => {
+  const aidatListeExcel = async () => {
+    const { aidat } = await tazeListeler();
     excelIndir(
       "aidat-talebe-listesi",
       "Talebe Listesi",
