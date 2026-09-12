@@ -7,7 +7,7 @@
 // üzerine yazılır.
 
 import { cacheOku, CACHE } from "./yerelCache";
-import { GRUPLAR, type GrupBilgi, type HocaMailAyar, type Talebe } from "./talebelerTipler";
+import type { GrupBilgi, HocaMailAyar, Talebe, EkstraHoca } from "./talebelerTipler";
 
 export { GRUPLAR } from "./talebelerTipler";
 export type {
@@ -115,9 +115,7 @@ export async function aidatOdemeAyarla(t: Talebe, ayKey: string, odendi: boolean
   return (await veriKatmani()).aidatOdemeAyarla(t, ayKey, odendi);
 }
 
-export async function ekstraHocalariKaydet(
-  hocalar: import("./talebelerTipler").EkstraHoca[],
-) {
+export async function ekstraHocalariKaydet(hocalar: EkstraHoca[]) {
   return (await veriKatmani()).ekstraHocalariKaydet(hocalar);
 }
 
@@ -136,5 +134,3 @@ export async function aidatMailGonderimIsaretle(
 export async function gruplariKaydet(liste: GrupBilgi[]) {
   return (await veriKatmani()).gruplariKaydet(liste);
 }
-
-void GRUPLAR;
