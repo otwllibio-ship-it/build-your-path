@@ -580,6 +580,17 @@ function Index() {
   const hafizTalebeler = useMemo(() => talebeler.filter((t) => !t.aidatSadece), [talebeler]);
   const aidatTalebeler = useMemo(() => talebeler.filter((t) => !t.aidatHaric), [talebeler]);
 
+  // PDF / Excel indirmeden hemen önce verileri sunucudan tazeler; böylece
+  // çıktı her zaman en son değişiklikleri içerir.
+  const tazeListeler = async () => {
+    const liste = await talebeleriTazele();
+    return {
+      tum: liste,
+      hafiz: liste.filter((t) => !t.aidatSadece),
+      aidat: liste.filter((t) => !t.aidatHaric),
+    };
+  };
+
   const haftalikToplam = useMemo(
     () => hafizTalebeler.reduce((acc, t) => acc + ilerleme(t, seciliHafta, haftaSonu), 0),
     [hafizTalebeler, seciliHafta, haftaSonu],
