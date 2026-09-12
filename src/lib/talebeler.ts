@@ -218,12 +218,19 @@ const AYAR_COL = "ayarlar";
 const AYAR_DOC = "genel";
 
 export async function aidatTutariniOku(): Promise<number> {
+  // Önce sunucudan (güncel) dener, ulaşılamazsa önbellekten okur.
   try {
-    const snap = await getDoc(doc(db, AYAR_COL, AYAR_DOC));
-    const v = snap.data()?.aidatTutar;
+    const snap = await getDocFromServer(doc(db, AYAR_COL, AYAR_DOC));
+    const v = snap.data()?.["aidatTutar"];
     return typeof v === "number" ? v : 0;
   } catch {
-    return 0;
+    try {
+      const snap = await getDoc(doc(db, AYAR_COL, AYAR_DOC));
+      const v = snap.data()?.["aidatTutar"];
+      return typeof v === "number" ? v : 0;
+    } catch {
+      return 0;
+    }
   }
 }
 
