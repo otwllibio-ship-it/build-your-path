@@ -665,7 +665,7 @@ function Index() {
         { baslik: "Sayfa", genislik: "10%", hiza: "center" },
         { baslik: "Cüz", genislik: "10%", hiza: "center" },
       ],
-      satirlar: hafizTalebeler.map((t, i) => {
+      satirlar: hafiz.map((t, i) => {
         const verilen = getDersGunler(t, seciliDers, seciliHafta);
         return [
           i + 1,
