@@ -816,7 +816,7 @@ function Index() {
         { baslik: "Grup", genislik: 16 },
         { baslik: "Telefon", genislik: 18 },
       ],
-      aidatTalebeler.map((t, i) => [
+      aidat.map((t, i) => [
         i + 1,
         t.isim,
         yasHesapla(t.dogum) ?? "—",
