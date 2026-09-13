@@ -789,17 +789,12 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
           <Button
             className="w-full"
             disabled={gonderiliyor === "mesaj"}
-            onClick={() =>
-              void serbestGonder(
-                "mesaj",
-                seciliEposta(mesajAlici, mesajEposta),
-                mesajKonu,
-                mesajMetin,
-              )
-            }
+            onClick={() => void mesajGonderCoklu()}
           >
             <Send className="mr-2 h-4 w-4" />
-            {gonderiliyor === "mesaj" ? "Gönderiliyor..." : "Mesajı gönder"}
+            {gonderiliyor === "mesaj"
+              ? "Gönderiliyor..."
+              : `Mesajı gönder${mesajSecimler.length + (mesajEposta.trim() ? 1 : 0) > 0 ? ` (${mesajSecimler.length + (mesajEposta.trim() ? 1 : 0)} alıcı)` : ""}`}
           </Button>
         </div>
       )}
