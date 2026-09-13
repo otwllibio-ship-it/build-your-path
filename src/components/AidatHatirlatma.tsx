@@ -706,32 +706,64 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
           </p>
 
           <div className="space-y-1">
-            <Label className="text-xs">Alıcı</Label>
-            <Select value={mesajAlici} onValueChange={setMesajAlici}>
-              <SelectTrigger className="h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="elle">E-postayı elle yaz</SelectItem>
+            <Label className="text-xs">Alıcılar</Label>
+            <div className="rounded-md border">
+              <label className="flex items-center gap-2 border-b px-3 py-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={
+                    alicilar.filter((a) => a.eposta.trim()).length > 0 &&
+                    mesajSecimler.length ===
+                      alicilar.filter((a) => a.eposta.trim()).length
+                  }
+                  onChange={(e) =>
+                    setMesajSecimler(
+                      e.target.checked
+                        ? alicilar
+                            .filter((a) => a.eposta.trim())
+                            .map((a) => a.anahtar)
+                        : [],
+                    )
+                  }
+                />
+                Tümünü seç
+              </label>
+              <div className="max-h-40 overflow-y-auto">
                 {alicilar
                   .filter((a) => a.eposta.trim())
                   .map((a) => (
-                    <SelectItem key={a.anahtar} value={a.anahtar}>
-                      {a.ad} — {a.eposta}
-                    </SelectItem>
+                    <label
+                      key={a.anahtar}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        checked={mesajSecimler.includes(a.anahtar)}
+                        onChange={(e) =>
+                          setMesajSecimler((s) =>
+                            e.target.checked
+                              ? [...s, a.anahtar]
+                              : s.filter((x) => x !== a.anahtar),
+                          )
+                        }
+                      />
+                      <span className="truncate">
+                        {a.ad} — {a.eposta}
+                      </span>
+                    </label>
                   ))}
-              </SelectContent>
-            </Select>
-            {mesajAlici === "elle" && (
-              <Input
-                type="email"
-                inputMode="email"
-                placeholder="kisi@gmail.com"
-                className="h-9"
-                value={mesajEposta}
-                onChange={(e) => setMesajEposta(e.target.value)}
-              />
-            )}
+              </div>
+            </div>
+            <Input
+              type="email"
+              inputMode="email"
+              placeholder="İsterseniz elle e-posta ekleyin (isteğe bağlı)"
+              className="h-9"
+              value={mesajEposta}
+              onChange={(e) => setMesajEposta(e.target.value)}
+            />
           </div>
 
           <div className="space-y-1">
