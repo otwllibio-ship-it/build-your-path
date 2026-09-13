@@ -95,7 +95,7 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
   const [raporKonu, setRaporKonu] = useState("");
   const [raporMetin, setRaporMetin] = useState("");
   // Mesaj sekmesi
-  const [mesajAlici, setMesajAlici] = useState("elle");
+  const [mesajSecimler, setMesajSecimler] = useState<string[]>([]);
   const [mesajEposta, setMesajEposta] = useState("");
   const [mesajKonu, setMesajKonu] = useState("");
   const [mesajMetin, setMesajMetin] = useState("");
@@ -208,6 +208,43 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
     try {
       await serbestMailGonder({ data: { eposta, konu, metin } });
       toast.success(`${eposta} adresine gönderildi.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "E-posta gönderilemedi.");
+    } finally {
+      setGonderiliyor(null);
+    }
+  };
+
+  const mesajGonderCoklu = async () => {
+    const secili = alicilar.filter(
+      (a) => mesajSecimler.includes(a.anahtar) && a.eposta.trim(),
+    );
+    const elleAdres = mesajEposta.trim();
+    const hedefler = [
+      ...secili.map((a) => a.eposta.trim()),
+      ...(elleAdres ? [elleAdres] : []),
+    ];
+    if (hedefler.length === 0) {
+      toast.error("En az bir alıcı seçin veya e-posta yazın.");
+      return;
+    }
+    if (!mesajKonu.trim() || !mesajMetin.trim()) {
+      toast.error("Konu ve mesaj boş olamaz.");
+      return;
+    }
+    setGonderiliyor("mesaj");
+    try {
+      for (const eposta of hedefler) {
+        // eslint-disable-next-line no-await-in-loop
+        await serbestMailGonder({
+          data: { eposta, konu: mesajKonu, metin: mesajMetin },
+        });
+      }
+      toast.success(
+        hedefler.length === 1
+          ? `${hedefler[0]} adresine gönderildi.`
+          : `${hedefler.length} kişiye gönderildi.`,
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "E-posta gönderilemedi.");
     } finally {
@@ -669,32 +706,64 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
           </p>
 
           <div className="space-y-1">
-            <Label className="text-xs">Alıcı</Label>
-            <Select value={mesajAlici} onValueChange={setMesajAlici}>
-              <SelectTrigger className="h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="elle">E-postayı elle yaz</SelectItem>
+            <Label className="text-xs">Alıcılar</Label>
+            <div className="rounded-md border">
+              <label className="flex items-center gap-2 border-b px-3 py-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={
+                    alicilar.filter((a) => a.eposta.trim()).length > 0 &&
+                    mesajSecimler.length ===
+                      alicilar.filter((a) => a.eposta.trim()).length
+                  }
+                  onChange={(e) =>
+                    setMesajSecimler(
+                      e.target.checked
+                        ? alicilar
+                            .filter((a) => a.eposta.trim())
+                            .map((a) => a.anahtar)
+                        : [],
+                    )
+                  }
+                />
+                Tümünü seç
+              </label>
+              <div className="max-h-40 overflow-y-auto">
                 {alicilar
                   .filter((a) => a.eposta.trim())
                   .map((a) => (
-                    <SelectItem key={a.anahtar} value={a.anahtar}>
-                      {a.ad} — {a.eposta}
-                    </SelectItem>
+                    <label
+                      key={a.anahtar}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        checked={mesajSecimler.includes(a.anahtar)}
+                        onChange={(e) =>
+                          setMesajSecimler((s) =>
+                            e.target.checked
+                              ? [...s, a.anahtar]
+                              : s.filter((x) => x !== a.anahtar),
+                          )
+                        }
+                      />
+                      <span className="truncate">
+                        {a.ad} — {a.eposta}
+                      </span>
+                    </label>
                   ))}
-              </SelectContent>
-            </Select>
-            {mesajAlici === "elle" && (
-              <Input
-                type="email"
-                inputMode="email"
-                placeholder="kisi@gmail.com"
-                className="h-9"
-                value={mesajEposta}
-                onChange={(e) => setMesajEposta(e.target.value)}
-              />
-            )}
+              </div>
+            </div>
+            <Input
+              type="email"
+              inputMode="email"
+              placeholder="İsterseniz elle e-posta ekleyin (isteğe bağlı)"
+              className="h-9"
+              value={mesajEposta}
+              onChange={(e) => setMesajEposta(e.target.value)}
+            />
           </div>
 
           <div className="space-y-1">
@@ -720,17 +789,12 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
           <Button
             className="w-full"
             disabled={gonderiliyor === "mesaj"}
-            onClick={() =>
-              void serbestGonder(
-                "mesaj",
-                seciliEposta(mesajAlici, mesajEposta),
-                mesajKonu,
-                mesajMetin,
-              )
-            }
+            onClick={() => void mesajGonderCoklu()}
           >
             <Send className="mr-2 h-4 w-4" />
-            {gonderiliyor === "mesaj" ? "Gönderiliyor..." : "Mesajı gönder"}
+            {gonderiliyor === "mesaj"
+              ? "Gönderiliyor..."
+              : `Mesajı gönder${mesajSecimler.length + (mesajEposta.trim() ? 1 : 0) > 0 ? ` (${mesajSecimler.length + (mesajEposta.trim() ? 1 : 0)} alıcı)` : ""}`}
           </Button>
         </div>
       )}
