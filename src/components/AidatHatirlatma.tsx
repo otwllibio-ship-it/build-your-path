@@ -215,6 +215,43 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
     }
   };
 
+  const mesajGonderCoklu = async () => {
+    const secili = alicilar.filter(
+      (a) => mesajSecimler.includes(a.anahtar) && a.eposta.trim(),
+    );
+    const elleAdres = mesajEposta.trim();
+    const hedefler = [
+      ...secili.map((a) => a.eposta.trim()),
+      ...(elleAdres ? [elleAdres] : []),
+    ];
+    if (hedefler.length === 0) {
+      toast.error("En az bir alıcı seçin veya e-posta yazın.");
+      return;
+    }
+    if (!mesajKonu.trim() || !mesajMetin.trim()) {
+      toast.error("Konu ve mesaj boş olamaz.");
+      return;
+    }
+    setGonderiliyor("mesaj");
+    try {
+      for (const eposta of hedefler) {
+        // eslint-disable-next-line no-await-in-loop
+        await serbestMailGonder({
+          data: { eposta, konu: mesajKonu, metin: mesajMetin },
+        });
+      }
+      toast.success(
+        hedefler.length === 1
+          ? `${hedefler[0]} adresine gönderildi.`
+          : `${hedefler.length} kişiye gönderildi.`,
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "E-posta gönderilemedi.");
+    } finally {
+      setGonderiliyor(null);
+    }
+  };
+
   const raporuTumHocalaraGonder = async () => {
     const hedefler = alicilar.filter((a) => a.eposta.trim());
     if (hedefler.length === 0) {
