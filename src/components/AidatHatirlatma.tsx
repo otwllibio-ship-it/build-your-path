@@ -95,7 +95,7 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
   const [raporKonu, setRaporKonu] = useState("");
   const [raporMetin, setRaporMetin] = useState("");
   // Mesaj sekmesi
-  const [mesajAlici, setMesajAlici] = useState("elle");
+  const [mesajSecimler, setMesajSecimler] = useState<string[]>([]);
   const [mesajEposta, setMesajEposta] = useState("");
   const [mesajKonu, setMesajKonu] = useState("");
   const [mesajMetin, setMesajMetin] = useState("");
